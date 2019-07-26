@@ -26,6 +26,8 @@ SOFTWARE.
 #ifndef IndiciumDirect3D11_h__
 #define IndiciumDirect3D11_h__
 
+#ifndef INDICIUM_NO_D3D11
+
 #include <dxgi.h>
 #include <d3d11.h>
 
@@ -66,7 +68,17 @@ typedef EVT_INDICIUM_D3D11_RESIZE_BUFFERS *PFN_INDICIUM_D3D11_RESIZE_BUFFERS;
 
 HRESULT
 FORCEINLINE
-D3D11_DEVICE_CONTEXT_FROM_SWAPCHAIN(
+D3D11_DEVICE_FROM_SWAPCHAIN(
+    IDXGISwapChain          *pSwapChain,
+    ID3D11Device            **ppDevice
+)
+{
+    return pSwapChain->GetDevice(__uuidof(ID3D11Device), (PVOID*)ppDevice);
+}
+
+HRESULT
+FORCEINLINE
+D3D11_DEVICE_IMMEDIATE_CONTEXT_FROM_SWAPCHAIN(
     IDXGISwapChain          *pSwapChain,
     ID3D11Device            **ppDevice,
     ID3D11DeviceContext     **ppContext
@@ -78,6 +90,17 @@ D3D11_DEVICE_CONTEXT_FROM_SWAPCHAIN(
         (*ppDevice)->GetImmediateContext(ppContext);
 
     return ret;
+}
+
+HRESULT
+FORCEINLINE
+D3D11_BACKBUFFER_FROM_SWAPCHAIN(
+    IDXGISwapChain          *pSwapChain,
+    ID3D11Texture2D         **ppBackBuffer,
+    UINT                    uBuffer = 0
+)
+{
+    return pSwapChain->GetBuffer(uBuffer, __uuidof(ID3D11Texture2D), (PVOID*)ppBackBuffer);
 }
 
 
@@ -112,5 +135,7 @@ VOID FORCEINLINE INDICIUM_D3D11_EVENT_CALLBACKS_INIT(
 {
     ZeroMemory(Callbacks, sizeof(INDICIUM_D3D11_EVENT_CALLBACKS));
 }
+
+#endif
 
 #endif // IndiciumDirect3D11_h__

@@ -42,15 +42,12 @@ SOFTWARE.
 #include "Engine.h"
 #include "Game/Game.h"
 #include "Global.h"
-#include "Utils/Logging.h"
 
 //
 // Logging
 // 
-#define ELPP_FEATURE_PERFORMANCE_TRACKING
-#include <easylogging++.h>
-
-INITIALIZE_EASYLOGGINGPP
+#include <spdlog/spdlog.h>
+#include <spdlog/sinks/basic_file_sink.h>
 
 
 INDICIUM_API PINDICIUM_ENGINE IndiciumEngineAlloc()
@@ -85,23 +82,24 @@ INDICIUM_API INDICIUM_ERROR IndiciumEngineInit(PINDICIUM_ENGINE Engine, PFN_INDI
     //
     // Set up logging
     //
-    el::Loggers::addFlag(el::LoggingFlag::MultiLoggerSupport);
-    el::Loggers::getLogger("indicium");
-    el::Loggers::getLogger("host");
-    el::Loggers::getLogger("HookDX9Ex");
-    el::Loggers::getLogger("HookDX10");
-    el::Loggers::getLogger("HookDX11");
-    el::Loggers::getLogger("HookDX12");
-    el::Loggers::reconfigureAllLoggers(
-        el::ConfigurationType::Filename, 
+    auto logger = spdlog::basic_logger_mt(
+        "indicium",
         Indicium::Core::Util::expand_environment_variables("%TEMP%\\Indicium-Supra.log")
-    );
+        );
 
-    auto logger = el::Loggers::getLogger("indicium");
+#if _DEBUG
+    spdlog::set_level(spdlog::level::debug);
+    logger->flush_on(spdlog::level::debug);
+#else
+    logger->flush_on(spdlog::level::info);
+#endif
 
+    spdlog::set_default_logger(logger);
+
+    logger = spdlog::get("indicium")->clone("api");
+    
     logger->info("Indicium engine initialized, attempting to launch main thread");
    
-
     //
     // Kickstart hooking the rendering pipeline
     // 
@@ -115,7 +113,7 @@ INDICIUM_API INDICIUM_ERROR IndiciumEngineInit(PINDICIUM_ENGINE Engine, PFN_INDI
     );
 
     if (!Engine->EngineThread) {
-        logger->fatal("Could not create main thread, library unusable");
+        logger->error("Could not create main thread, library unusable");
         return INDICIUM_ERROR_CREATE_THREAD_FAILED;
     }
 
@@ -130,7 +128,7 @@ INDICIUM_API VOID IndiciumEngineShutdown(PINDICIUM_ENGINE Engine, PFN_INDICIUM_G
         return;
     }
 
-    auto logger = el::Loggers::getLogger("indicium");
+    auto logger = spdlog::get("indicium")->clone("api");
 
     logger->info("Indicium engine shutdown requested, attempting to terminate main thread");
 
@@ -138,7 +136,7 @@ INDICIUM_API VOID IndiciumEngineShutdown(PINDICIUM_ENGINE Engine, PFN_INDICIUM_G
 
     if (!ret)
     {
-        logger->error("SetEvent failed: %v", GetLastError());
+        logger->error("SetEvent failed: {}", GetLastError());
     }
 
     const auto result = WaitForSingleObject(Engine->EngineThread, 3000);
@@ -172,6 +170,7 @@ INDICIUM_API VOID IndiciumEngineShutdown(PINDICIUM_ENGINE Engine, PFN_INDICIUM_G
     CloseHandle(Engine->EngineThread);
 
     logger->info("Engine shutdown complete");
+    logger->flush();
 }
 
 INDICIUM_API VOID IndiciumEngineFree(PINDICIUM_ENGINE Engine)
@@ -183,12 +182,18 @@ INDICIUM_API VOID IndiciumEngineFree(PINDICIUM_ENGINE Engine)
     free(Engine);
 }
 
+#ifndef INDICIUM_NO_D3D9
+
 INDICIUM_API VOID IndiciumEngineSetD3D9EventCallbacks(PINDICIUM_ENGINE Engine, PINDICIUM_D3D9_EVENT_CALLBACKS Callbacks)
 {
     if (Engine) {
         Engine->EventsD3D9 = *Callbacks;
     }
 }
+
+#endif
+
+#ifndef INDICIUM_NO_D3D10
 
 INDICIUM_API VOID IndiciumEngineSetD3D10EventCallbacks(PINDICIUM_ENGINE Engine, PINDICIUM_D3D10_EVENT_CALLBACKS Callbacks)
 {
@@ -197,12 +202,20 @@ INDICIUM_API VOID IndiciumEngineSetD3D10EventCallbacks(PINDICIUM_ENGINE Engine, 
     }
 }
 
+#endif
+
+#ifndef INDICIUM_NO_D3D11
+
 INDICIUM_API VOID IndiciumEngineSetD3D11EventCallbacks(PINDICIUM_ENGINE Engine, PINDICIUM_D3D11_EVENT_CALLBACKS Callbacks)
 {
     if (Engine) {
         Engine->EventsD3D11 = *Callbacks;
     }
 }
+
+#endif
+
+#ifndef INDICIUM_NO_D3D12
 
 INDICIUM_API VOID IndiciumEngineSetD3D12EventCallbacks(PINDICIUM_ENGINE Engine, PINDICIUM_D3D12_EVENT_CALLBACKS Callbacks)
 {
@@ -211,46 +224,48 @@ INDICIUM_API VOID IndiciumEngineSetD3D12EventCallbacks(PINDICIUM_ENGINE Engine, 
     }
 }
 
+#endif
+
 INDICIUM_API VOID IndiciumEngineLogDebug(LPCSTR Format, ...)
 {
+    auto logger = spdlog::get("indicium")->clone("host");
     va_list args;
+    char buf[1000]; // TODO: dumb, make better
     va_start(args, Format);
-
-    auto logger = el::Loggers::getLogger("host");
-    logger->debug(Indicium::Core::Logging::format(Format, args));
-
+    vsnprintf(buf, sizeof(buf), Format, args);
     va_end(args);
+    logger->debug(buf);
 }
 
 INDICIUM_API VOID IndiciumEngineLogInfo(LPCSTR Format, ...)
 {
+    auto logger = spdlog::get("indicium")->clone("host");
     va_list args;
+    char buf[1000]; // TODO: dumb, make better
     va_start(args, Format);
-
-    auto logger = el::Loggers::getLogger("host");
-    logger->info(Indicium::Core::Logging::format(Format, args));
-
+    vsnprintf(buf, sizeof(buf), Format, args);
     va_end(args);
+    logger->info(buf);
 }
 
 INDICIUM_API VOID IndiciumEngineLogWarning(LPCSTR Format, ...)
 {
+    auto logger = spdlog::get("indicium")->clone("host");
     va_list args;
+    char buf[1000]; // TODO: dumb, make better
     va_start(args, Format);
-
-    auto logger = el::Loggers::getLogger("host");
-    logger->warn(Indicium::Core::Logging::format(Format, args));
-
+    vsnprintf(buf, sizeof(buf), Format, args);
     va_end(args);
+    logger->warn(buf);
 }
 
 INDICIUM_API VOID IndiciumEngineLogError(LPCSTR Format, ...)
 {
+    auto logger = spdlog::get("indicium")->clone("host");
     va_list args;
+    char buf[1000]; // TODO: dumb, make better
     va_start(args, Format);
-
-    auto logger = el::Loggers::getLogger("host");
-    logger->error(Indicium::Core::Logging::format(Format, args));
-
+    vsnprintf(buf, sizeof(buf), Format, args);
     va_end(args);
+    logger->error(buf);
 }

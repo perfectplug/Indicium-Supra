@@ -27,10 +27,14 @@ SOFTWARE.
 #define IndiciumCore_h__
 
 
+#ifdef INDICIUM_DYNAMIC
 #ifdef INDICIUM_EXPORTS
 #define INDICIUM_API __declspec(dllexport)
 #else
 #define INDICIUM_API __declspec(dllimport)
+#endif
+#else
+#define INDICIUM_API
 #endif
 
 #ifdef __cplusplus
@@ -155,6 +159,8 @@ extern "C" {
         PINDICIUM_ENGINE Engine
     );
 
+#ifndef INDICIUM_NO_D3D9
+
     /**
      * \fn  INDICIUM_API VOID IndiciumEngineSetD3D9EventCallbacks( _In_ PINDICIUM_ENGINE Engine, _In_ PINDICIUM_D3D9_EVENT_CALLBACKS Callbacks );
      *
@@ -174,6 +180,10 @@ extern "C" {
         _In_
         PINDICIUM_D3D9_EVENT_CALLBACKS Callbacks
     );
+
+#endif
+
+#ifndef INDICIUM_NO_D3D10
 
     /**
      * \fn  INDICIUM_API VOID IndiciumEngineSetD3D10EventCallbacks( _In_ PINDICIUM_ENGINE Engine, _In_ PINDICIUM_D3D10_EVENT_CALLBACKS Callbacks );
@@ -195,6 +205,10 @@ extern "C" {
         PINDICIUM_D3D10_EVENT_CALLBACKS Callbacks
     );
 
+#endif
+
+#ifndef INDICIUM_NO_D3D11
+
     /**
      * \fn  INDICIUM_API VOID IndiciumEngineSetD3D11EventCallbacks( _In_ PINDICIUM_ENGINE Engine, _In_ PINDICIUM_D3D11_EVENT_CALLBACKS Callbacks );
      *
@@ -215,6 +229,10 @@ extern "C" {
         PINDICIUM_D3D11_EVENT_CALLBACKS Callbacks
     );
 
+#endif
+
+#ifndef INDICIUM_NO_D3D12
+
     /**
      * \fn  INDICIUM_API VOID IndiciumEngineSetD3D12EventCallbacks( _In_ PINDICIUM_ENGINE Engine, _In_ PINDICIUM_D3D12_EVENT_CALLBACKS Callbacks );
      *
@@ -234,6 +252,8 @@ extern "C" {
         _In_
         PINDICIUM_D3D12_EVENT_CALLBACKS Callbacks
     );
+
+#endif
 
     /**
      * \fn  INDICIUM_API VOID IndiciumEngineLogDebug( _In_ LPCSTR Format, _In_opt_ ... );

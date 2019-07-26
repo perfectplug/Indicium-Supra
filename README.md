@@ -24,7 +24,7 @@ API-Hooking and rendering framework for DirectX-based games.
 - [Windows SDK](https://developer.microsoft.com/en-us/windows/downloads/windows-10-sdk)
 - [.NET Core SDK 2.1](https://www.microsoft.com/net/download/dotnet-core/2.1) (or greater, required for building via CLI only)
 - [Follow the Vcpkg Quick Start](https://github.com/Microsoft/vcpkg#quick-start) and install the following packages:
-  - `.\vcpkg install easyloggingpp:x86-windows-static easyloggingpp:x64-windows-static detours:x86-windows-static detours:x64-windows-static`
+  - `.\vcpkg install spdlog:x86-windows-static spdlog:x64-windows-static detours:x86-windows-static detours:x64-windows-static`
   - For the ImGui sample to build you'll also need:
     - `.\vcpkg install imgui:x86-windows-static imgui:x64-windows-static`
 
@@ -48,13 +48,13 @@ Now if you're really in a hurry you can [grab pre-built binaries from the buildb
 
 ## How to use
 
-Inject the resulting `Indicium-Supra.dll` into the target process first using a DLL injection utility of your choice (you can ofc. [use mine as well](https://github.com/nefarius/Injector)). To do anything useful you also need one or more host libraries injected as well. The following example loads the [imgui sample](samples/Indicium-ImGui):
+Inject the resulting host library (e.g. `Indicium-ImGui.dll`) into the target process first using a DLL injection utility of your choice (you can ofc. [use mine as well](https://github.com/nefarius/Injector)). The following example loads the [imgui sample](samples/Indicium-ImGui):
 
 ```PowerShell
-.\Injector -i -n hl2.exe Indicium-Supra.dll Indicium-ImGui.dll
+.\Injector -i -n hl2.exe Indicium-ImGui.dll
 ```
 
-Just make sure to inject `Indicium-Supra.dll` first or you'll get a `LoadLibrary failed` error because of the missing dependency.
+Just make sure your host library doesn't require any external dependencies not present in the process context or you'll get a `LoadLibrary failed` error.
 
 ## Diagnostics
 
